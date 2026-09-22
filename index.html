@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>走啊！哪个方向不堵？</title>
+  <link rel="stylesheet" href="src/styles/variables.css" />
+  <link rel="stylesheet" href="src/styles/heat.css" />
+</head>
+<body>
+  <!-- 走啊 · 三态决策画布：定位态 / 扫描态 / 结果态（10.2） -->
+  <div id="app" data-state="idle">
+    <div id="map-container"></div>
+    <button id="btn-scan" class="scan-btn">扫一圈</button>
+  </div>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

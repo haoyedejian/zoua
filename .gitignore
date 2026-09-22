@@ -1,0 +1,22 @@
+# 依赖
+node_modules/
+dist/
+build/
+
+# 环境变量（真实 Key 不入库）
+.env
+.env.local
+.env.*.local
+
+# 部署产物
+.vercel/
+.vercel.app
+*.log
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/

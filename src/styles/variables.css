@@ -1,0 +1,60 @@
+/* =====================================================
+ * 走啊 (zoua) · 设计 Token（唯一来源）
+ * 契约依据：产品规划书 v2.8 第 10.12.2 节
+ * 规则：组件禁止硬编码颜色/字号/圆角/动效时长，一律引用本文件变量
+ * ===================================================== */
+
+:root {
+  /* ---------- 色彩（红绿灯语义色是全产品唯一强饱和色） ---------- */
+  --color-brand: #374151;                        /* 青灰：品牌元素，克制不抢戏 */
+  --color-success: #16A34A;                      /* 绿：畅通/推荐（唯一绿） */
+  --color-warning: #FACC15;                      /* 黄：缓行（唯一黄） */
+  --color-danger: #E8463A;                       /* 红：拥堵/严重（唯一红） */
+  --color-bg-map: #0B1220;                       /* 地图深色底（夜间/早间出发情境） */
+  --color-surface: rgba(17, 24, 39, 0.1);        /* 毛玻璃卡片底（10% 黑） */
+  --color-surface-strong: rgba(17, 24, 39, 0.25);/* 聚焦态卡片/图例/浮层底 */
+  --color-text-primary: #F9FAFB;                 /* 主文本（深底上） */
+  --color-text-secondary: #D1D5DB;               /* 次级文本 */
+  --color-text-tertiary: #9CA3AF;                /* 辅助/说明文本 */
+  --color-text-dark: #1F2937;                    /* 白底分享卡上的主文本 */
+  --color-border: rgba(255, 255, 255, 0.08);     /* 细分隔线/内描边 */
+
+  /* ---------- 字体 ---------- */
+  --font-title: "PingFang SC", "HarmonyOS Sans", -apple-system, sans-serif;
+  --font-body: "PingFang SC", "HarmonyOS Sans", -apple-system, sans-serif;
+  --font-num: "SF Mono", "Roboto Mono", ui-monospace, monospace; /* 数字等宽防跳动 */
+
+  /* ---------- 间距（4pt 栅格） ---------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 40px;
+  --space-8: 56px;
+
+  /* ---------- 圆角 ---------- */
+  --radius-sm: 8px;      /* 按钮/pin/图例 */
+  --radius-md: 16px;     /* 卡片 */
+  --radius-full: 999px;  /* 胶囊（主按钮/滑杆头） */
+
+  /* ---------- 图标 ---------- */
+  --stroke-icon: 2px;    /* 线性图标描边宽度 */
+
+  /* ---------- 动效（时间/缓动） ---------- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);      /* 飞出/相机/计数（Apple easeOutQuart 近似） */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);  /* 常规过渡 */
+  --dur-flight: 300ms;   /* 地图相机飞行 */
+  --dur-count: 600ms;    /* 数字计数滚动 */
+  --dur-card: 250ms;     /* 卡片切换/滑入 */
+  --dur-stagger: 80ms;   /* 结果卡错峰入场间隔 */
+
+  /* ---------- 图层叠放次序（z-order 契约，10.12.8） ---------- */
+  --z-map: 0;            /* 高德底图 + 实时路况图层 */
+  --z-heat: 10;          /* 热力连续面 + 县界描边 */
+  --z-pin: 20;           /* 用户蓝点 / 推荐 pin */
+  --z-scanner: 30;       /* 扫描动画（仅扫描态） */
+  --z-chrome: 40;        /* 前景控件（按钮/结果卡/图例/滑杆） */
+  --z-sheet: 50;         /* 半屏目的地卡片 */
+}

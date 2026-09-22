@@ -1,0 +1,104 @@
+/* =====================================================
+ * 走啊 (zoua) · 热力渲染样式
+ * 契约依据：产品规划书 v2.8 第 10.9 节「热力渲染规范」
+ * 模型：核密度连续面（多层 radial-gradient 叠加 + screen 混合），
+ *       感知均匀色阶 绿#16A34A→黄#FACC15→橙#FB923C→红#E8463A，
+ *       双编码（亮度+颜色），bloom 高光核心，行政区边界描边。
+ * 注意：热力面永远位于官方路况图层之上（--z-heat > --z-map）
+ * ===================================================== */
+
+/* 核密度连续面容器：检查点高斯核在此叠加累积 */
+.heat-surface {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-heat);
+  pointer-events: none;
+  mix-blend-mode: screen;          /* 重叠区自然累积变亮，禁止孤立色块 */
+  opacity: 0.92;
+}
+
+/* 单个检查点高斯核（由 JS 按坐标/权重生成） */
+.heat-kernel {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  /* 色阶插值由 JS 计算注入（0~100 连续映射到四色区间） */
+}
+
+/* 高拥堵核心 bloom 发光层（亮度+颜色双编码） */
+.heat-bloom {
+  filter: blur(8px);
+  opacity: 0.55;
+}
+
+/* 行政区边界：县界细白线描边 + 内部淡填充（choropleth 辅助层） */
+.heat-county {
+  position: absolute;
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.45);
+  stroke-width: 1;
+  pointer-events: none;
+}
+.heat-county-fill {
+  position: absolute;
+  fill: var(--color-success);
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+/* 推荐 pin：绿系实心圆点 + 白描边 + 绿光晕（置于绿区"绿中选绿"） */
+.rec-pin {
+  position: absolute;
+  z-index: var(--z-pin);
+  transform: translate(-50%, -100%);
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  background: var(--color-success);
+  border: 2px solid #fff;
+  box-shadow: 0 0 12px var(--color-success);   /* 唯一允许的阴影（10.12.3） */
+  transition: transform var(--dur-card) var(--ease-standard);
+  cursor: pointer;
+}
+.rec-pin.active {
+  transform: translate(-50%, -100%) scale(1.25);
+  box-shadow: 0 0 20px var(--color-success);
+}
+
+/* 常驻图例：色带 + 数值 + 档位标签，右下角 */
+.heat-legend {
+  position: absolute;
+  right: var(--space-4);
+  bottom: var(--space-6);
+  z-index: var(--z-chrome);
+  background: var(--color-surface-strong);
+  backdrop-filter: blur(8px) saturate(1.2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+.heat-legend-bar {
+  width: 120px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg,
+    #16A34A 0%, #FACC15 34%, #FB923C 67%, #E8463A 100%);
+}
+
+/* 色弱兜底：颜色之外补 icon/数字（三重编码，10.8） */
+.heat-legend-scale {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-num);
+  margin-top: 2px;
+}
+
+/* 结果态收敛：扇区 conic 只用于扫描动画，结果态隐藏（10.9） */
+.scanner-sector {
+  display: none;   /* 结果态由 JS 移除 .scanning 类后整体隐藏 */
+}
+.scanning .scanner-sector {
+  display: block;
+}
