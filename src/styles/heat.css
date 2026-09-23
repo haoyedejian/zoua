@@ -7,6 +7,51 @@
  * 注意：热力面永远位于官方路况图层之上（--z-heat > --z-map）
  * ===================================================== */
 
+/* ---------- 画布布局（全屏地图主舞台，10.2） ---------- */
+html, body {
+  margin: 0;
+  height: 100%;
+  overscroll-behavior: none;
+  background: var(--color-bg-map);
+}
+#app {
+  position: relative;
+  width: 100%;
+  height: 100dvh;   /* 移动端避开地址栏伸缩 */
+  overflow: hidden;
+}
+#map-container {
+  position: absolute;
+  inset: 0;
+}
+
+/* 主按钮：扫一圈（zhong胶囊，10.12 交互规范） */
+.scan-btn {
+  position: absolute;
+  bottom: calc(var(--space-6) + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-chrome);
+  padding: var(--space-4) var(--space-8);
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-text-primary);
+  color: var(--color-text-dark);
+  font: 16px/1 var(--font-title);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  transition: transform var(--dur-card) var(--ease-out), background var(--dur-card) var(--ease-standard);
+}
+.scan-btn:active {
+  transform: translateX(-50%) scale(0.96);
+}
+.scan-btn:focus-visible {
+  outline: 2px solid var(--color-success);
+  outline-offset: 2px;
+}
+
 /* 核密度连续面容器：检查点高斯核在此叠加累积 */
 .heat-surface {
   position: absolute;
@@ -15,6 +60,35 @@
   pointer-events: none;
   mix-blend-mode: screen;          /* 重叠区自然累积变亮，禁止孤立色块 */
   opacity: 0.92;
+}
+
+/* 步骤4 真实数据热力画布（叠加在地图容器上） */
+#heat-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: var(--z-heat);
+  pointer-events: none;
+}
+
+/* 显式降级态（7.3 下界：不伪造数据，只提示） */
+.degraded {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  background: rgba(11, 18, 32, 0.82);
+  z-index: var(--z-scanner);
+  color: var(--color-text-secondary);
+  font: 15px/1.6 var(--font-body);
+  text-align: center;
+}
+#app[data-state='degraded'] .scan-btn {
+  /* 降级态下主按钮仍可用，允许重试 */
+  opacity: 0.9;
 }
 
 /* 单个检查点高斯核（由 JS 按坐标/权重生成） */
@@ -101,4 +175,87 @@
 }
 .scanning .scanner-sector {
   display: block;
+}
+
+/* ---------- 结果推荐卡（10.12.3 毛玻璃三层卡片，无阴影） ---------- */
+.result-cards {
+  position: absolute;
+  right: var(--space-4);
+  top: var(--space-6);
+  left: var(--space-4);
+  z-index: var(--z-chrome);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.rec-card {
+  background: var(--color-surface);
+  backdrop-filter: blur(8px) saturate(1.2);
+  -webkit-backdrop-filter: blur(8px) saturate(1.2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+  transition: border-color var(--dur-card) var(--ease-standard), background var(--dur-card) var(--ease-standard);
+}
+.rec-card.active {
+  border-color: var(--color-success);
+  background: var(--color-surface-strong);
+}
+.rec-rank {
+  font: 11px/1 var(--font-body);
+  font-weight: 600;
+  color: var(--rec-accent, var(--color-success));
+  margin-bottom: var(--space-1);
+}
+.rec-title {
+  font: 17px/1.2 var(--font-title);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+.rec-num {
+  margin-top: var(--space-1);
+  font: 13px/1.3 var(--font-body);
+  color: var(--color-text-secondary);
+}
+.rec-num .num {
+  font-family: var(--font-num);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--rec-accent, var(--color-success));
+}
+.rec-meta {
+  margin-top: 2px;
+  font: 11px/1.4 var(--font-body);
+  color: var(--color-text-tertiary);
+}
+
+/* 说明文案 */
+.hint {
+  position: absolute;
+  bottom: calc(var(--space-6) + env(safe-area-inset-bottom));
+  left: var(--space-5);
+  right: var(--space-5);
+  z-index: var(--z-chrome);
+  margin: 0;
+  text-align: center;
+  font: 11px/1.6 var(--font-body);
+  color: var(--color-text-tertiary);
+}
+
+/* 响应式：窄屏卡片从右浮层改为贴底（12.5） */
+@media (max-width: 479px) {
+  .result-cards {
+    top: auto;
+    bottom: calc(var(--space-8) + env(safe-area-inset-bottom));
+    flex-direction: row;
+    gap: var(--space-2);
+  }
+  .rec-card {
+    flex: 1;
+    padding: var(--space-2) var(--space-3);
+  }
+  .rec-num .num {
+    font-size: 18px;
+  }
 }
