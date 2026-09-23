@@ -5,10 +5,13 @@
  * 安全：AMAP_WEB_KEY 仅服务端持有；前端只传 keywords 与 subdistrict 档位。
  */
 
+import { guardOrigin } from './_guard.js';
+
 const AMAP_KEY = process.env.AMAP_WEB_KEY;
 const AMAP_DISTRICT_URL = 'https://restapi.amap.com/v3/config/district';
 
 export default async function handler(req, res) {
+  if (!guardOrigin(req, res)) return;
   const { keywords, subdistrict, extensions } = req.query;
   if (!AMAP_KEY) {
     res.status(500).json({ status: 0, info: 'SERVER_KEY_MISSING' });

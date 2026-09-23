@@ -6,10 +6,13 @@
  * 未开通时返回明确错误，禁止伪造数据（7.3 下界）。
  */
 
+import { guardOrigin } from './_guard.js';
+
 const AMAP_KEY = process.env.AMAP_WEB_KEY;
 const AMAP_TRAFFIC_URL = 'https://restapi.amap.com/v3/traffic/status/rectangle';
 
 export default async function handler(req, res) {
+  if (!guardOrigin(req, res)) return;
   const { rectangle, level } = req.query;
   if (!AMAP_KEY) {
     res.status(500).json({ status: 0, info: 'SERVER_KEY_MISSING' });

@@ -5,10 +5,13 @@
  * 前端按 poiid 本地缓存复用（配额纪律 9.2）。
  */
 
+import { guardOrigin } from './_guard.js';
+
 const AMAP_KEY = process.env.AMAP_WEB_KEY;
 const AMAP_POI_URL = 'https://restapi.amap.com/v5/place/detail';
 
 export default async function handler(req, res) {
+  if (!guardOrigin(req, res)) return;
   const { poiid } = req.query;
   if (!poiid) {
     res.status(400).json({ status: 0, info: 'MISSING_POIID' });

@@ -7,18 +7,24 @@
  * 注意：热力面永远位于官方路况图层之上（--z-heat > --z-map）
  * ===================================================== */
 
-/* ---------- 画布布局（全屏地图主舞台，10.2） ---------- */
+/* ---------- 画布布局（移动端优先：固定竖屏手机容器，10.2/10.12.5） ---------- */
 html, body {
   margin: 0;
   height: 100%;
   overscroll-behavior: none;
-  background: var(--color-bg-map);
+  background: #05070d;   /* 桌面调试时两侧深色留白 */
+}
+body {
+  display: flex;
+  justify-content: center;
 }
 #app {
   position: relative;
   width: 100%;
-  height: 100dvh;   /* 移动端避开地址栏伸缩 */
+  max-width: 480px;      /* 手机竖屏容器：桌面端居中模拟，真机全屏 */
+  height: 100dvh;        /* 移动端避开地址栏伸缩 */
   overflow: hidden;
+  box-shadow: 0 0 48px rgba(0, 0, 0, 0.7); /* 桌面留白时的浮起效果 */
 }
 #map-container {
   position: absolute;
@@ -82,9 +88,43 @@ html, body {
   padding: var(--space-6);
   background: rgba(11, 18, 32, 0.82);
   z-index: var(--z-scanner);
-  color: var(--color-text-secondary);
-  font: 15px/1.6 var(--font-body);
+}
+.degraded-card {
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  max-width: 320px;
   text-align: center;
+}
+.degraded-icon {
+  font-size: 40px;
+  line-height: 1;
+  margin-bottom: var(--space-3);
+}
+.degraded-title {
+  font: 700 17px/1.3 var(--font-title);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-2);
+}
+.degraded-msg {
+  font: 14px/1.6 var(--font-body);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-4);
+}
+.degraded-retry {
+  height: 40px;
+  padding: 0 var(--space-6);
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-text-primary);
+  color: var(--color-text-dark);
+  font: 600 15px/1 var(--font-title);
+  cursor: pointer;
+  transition: transform var(--dur-card) var(--ease-out);
+}
+.degraded-retry:active {
+  transform: scale(0.96);
 }
 #app[data-state='degraded'] .scan-btn {
   /* 降级态下主按钮仍可用，允许重试 */
@@ -119,30 +159,58 @@ html, body {
   pointer-events: none;
 }
 
-/* 推荐 pin：绿系实心圆点 + 白描边 + 绿光晕（置于绿区"绿中选绿"） */
+/* 推荐 pin：编号 badge（绿圈白字+光晕）+ 县名·距离标签（设计稿 10.12.3） */
 .rec-pin {
   position: absolute;
   z-index: var(--z-pin);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
   transform: translate(-50%, -100%);
-  width: 20px;
-  height: 20px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.pin-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
   border-radius: var(--radius-full);
   background: var(--color-success);
   border: 2px solid #fff;
   box-shadow: 0 0 12px var(--color-success);   /* 唯一允许的阴影（10.12.3） */
+  color: #fff;
+  font: 600 13px/1 var(--font-num);
   transition: transform var(--dur-card) var(--ease-standard);
-  cursor: pointer;
 }
-.rec-pin.active {
-  transform: translate(-50%, -100%) scale(1.25);
+.pin-label {
+  max-width: 128px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-strong);
+  backdrop-filter: blur(8px) saturate(1.2);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  font: 11px/1.3 var(--font-body);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rec-pin.active .pin-badge {
+  transform: scale(1.3);
   box-shadow: 0 0 20px var(--color-success);
 }
+.rec-pin.active .pin-label {
+  border-color: var(--color-success);
+}
 
-/* 常驻图例：色带 + 数值 + 档位标签，右下角 */
+/* 常驻图例（10.9）：标题 + 色带 + 0/50/100 刻度，左上角（设计稿） */
 .heat-legend {
   position: absolute;
-  right: var(--space-4);
-  bottom: var(--space-6);
+  left: var(--space-4);
+  top: calc(var(--space-4) + env(safe-area-inset-top));
   z-index: var(--z-chrome);
   background: var(--color-surface-strong);
   backdrop-filter: blur(8px) saturate(1.2);
@@ -150,8 +218,12 @@ html, body {
   border-radius: var(--radius-sm);
   padding: var(--space-2) var(--space-3);
   font-family: var(--font-body);
-  font-size: 11px;
+}
+.heat-legend-title {
+  font: 11px/1 var(--font-body);
+  font-weight: 600;
   color: var(--color-text-secondary);
+  margin-bottom: var(--space-1);
 }
 .heat-legend-bar {
   width: 120px;
@@ -160,12 +232,11 @@ html, body {
   background: linear-gradient(90deg,
     #16A34A 0%, #FACC15 34%, #FB923C 67%, #E8463A 100%);
 }
-
-/* 色弱兜底：颜色之外补 icon/数字（三重编码，10.8） */
 .heat-legend-scale {
   display: flex;
   justify-content: space-between;
-  font-family: var(--font-num);
+  font: 10px/1 var(--font-num);
+  color: var(--color-text-tertiary);
   margin-top: 2px;
 }
 
@@ -177,85 +248,407 @@ html, body {
   display: block;
 }
 
-/* ---------- 结果推荐卡（10.12.3 毛玻璃三层卡片，无阴影） ---------- */
-.result-cards {
+/* ---------- 底部结果面板（毛玻璃 sheet：列表/详情双视图，不遮挡图例/地图主体） ---------- */
+.result-sheet {
   position: absolute;
-  right: var(--space-4);
-  top: var(--space-6);
-  left: var(--space-4);
+  left: 0;
+  right: 0;
+  bottom: calc(var(--space-6) + 56px + env(safe-area-inset-bottom)); /* 让位底部主按钮 */
   z-index: var(--z-chrome);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+  padding: var(--space-3) 0 var(--space-3);
+  background: rgba(11, 18, 32, 0.82);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  border-top: 1px solid var(--color-border);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
+.sheet-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: 0 var(--space-4) var(--space-2);
+}
+.sheet-title {
+  font: 15px/1.2 var(--font-title);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sheet-title em {
+  font-style: normal;
+  font: 11px/1.2 var(--font-body);
+  font-weight: 400;
+  color: var(--color-text-tertiary);
+  margin-left: var(--space-2);
+}
+.sheet-sub {
+  font: 11px/1 var(--font-body);
+  color: var(--color-text-tertiary);
+}
+/* 横滑提示（三卡超出视口时，明确告知可滑动，避免被误认为布局错误） */
+.sheet-more {
+  margin-left: auto;
+  flex-shrink: 0;
+  font: 11px/1 var(--font-body);
+  color: var(--color-text-tertiary);
+  opacity: 0.75;
+}
+.sheet-foot {
+  padding: var(--space-3) var(--space-4) var(--space-2);
+  font: 11px/1.4 var(--font-body);
+  color: var(--color-text-tertiary);
+  text-align: center;
+}
+.result-cards {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;         /* 横滑切换推荐 */
+  padding: 0 var(--space-4);
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  scroll-padding: 0 var(--space-4);
+}
+.result-cards::-webkit-scrollbar { display: none; }
 .rec-card {
-  background: var(--color-surface);
-  backdrop-filter: blur(8px) saturate(1.2);
-  -webkit-backdrop-filter: blur(8px) saturate(1.2);
+  flex: 0 0 76%;            /* 单卡主视，露出下一卡边缘提示可滑 */
+  min-width: 0;
+  max-width: 380px;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  background: var(--color-surface-strong);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-3);
   cursor: pointer;
-  transition: border-color var(--dur-card) var(--ease-standard), background var(--dur-card) var(--ease-standard);
+  transition: border-color var(--dur-card) var(--ease-standard), transform var(--dur-card) var(--ease-out);
 }
-.rec-card.active {
-  border-color: var(--color-success);
-  background: var(--color-surface-strong);
+.rec-card:active {
+  transform: scale(0.98);
+}
+/* 末卡后留白：横滑到头不贴边 */
+.cards-spacer {
+  flex: 0 0 var(--space-4);
+}
+.rec-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
 }
 .rec-rank {
   font: 11px/1 var(--font-body);
   font-weight: 600;
   color: var(--rec-accent, var(--color-success));
-  margin-bottom: var(--space-1);
+}
+.rec-dir {
+  font: 11px/1 var(--font-body);
+  color: var(--color-text-tertiary);
 }
 .rec-title {
   font: 17px/1.2 var(--font-title);
   font-weight: 600;
   color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.rec-num {
+.rec-sub {
   margin-top: var(--space-1);
-  font: 13px/1.3 var(--font-body);
-  color: var(--color-text-secondary);
+  font: 12px/1.4 var(--font-body);
+  color: var(--color-text-tertiary);
 }
-.rec-num .num {
-  font-family: var(--font-num);
-  font-size: 22px;
+.rec-more {
+  margin-top: var(--space-2);
+  font: 12px/1 var(--font-body);
   font-weight: 600;
   color: var(--rec-accent, var(--color-success));
 }
-.rec-meta {
-  margin-top: 2px;
-  font: 11px/1.4 var(--font-body);
-  color: var(--color-text-tertiary);
+
+/* 详情标签组（10.11-2：距离/时间/指数；缺失即隐藏） */
+.rec-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.rec-tags .tag {
+  padding: 3px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font: 11px/1 var(--font-num);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
 }
 
-/* 说明文案 */
-.hint {
+/* 方向级推荐简介（10.11 v2.9 补）：正文 15px Regular（10.12.2 简介/理由句）；小卡限两行省略 */
+.rec-desc {
+  margin-top: var(--space-2);
+  font: 14px/1.5 var(--font-body);
+  color: var(--color-text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 输出层动作：去这里 / 分享卡片（与主按钮同一设计语言：胶囊 + 高对比） */
+.detail-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+.act-btn {
+  flex: 1;
+  height: 44px;                     /* 触控目标 ≥44pt（10.8） */
+  padding: 0 var(--space-4);
+  border: none;
+  border-radius: var(--radius-full);
+  font: 14px/1 var(--font-title);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: transform var(--dur-card) var(--ease-out), opacity var(--dur-card) var(--ease-standard);
+}
+.act-btn:active {
+  transform: scale(0.97);
+}
+.act-nav {
+  background: var(--color-text-primary);
+  color: var(--color-text-dark);
+}
+.act-share {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+}
+
+/* 景区详情视图（点击景区名称后替换列表，带返回） */
+.sheet-detail {
+  padding: 0 var(--space-4);
+}
+.detail-head {
+  display: flex;
+}
+.detail-back {
+  border: none;
+  background: none;
+  padding: var(--space-1) 0;
+  color: var(--color-text-secondary);
+  font: 13px/1 var(--font-body);
+  cursor: pointer;
+}
+.detail-back:active {
+  color: var(--color-text-primary);
+}
+.detail-title {
+  margin-top: var(--space-1);
+  font: 20px/1.3 var(--font-title);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+.detail-intro {
+  margin: var(--space-2) 0 0;
+  font: 14px/1.7 var(--font-body);
+  color: var(--color-text-secondary);
+}
+
+/* 区县详情 · 可玩目的地列表（两阶段推荐·阶段2） */
+.region-spots {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+.spot-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+.spot-main {
+  flex: 1;
+  min-width: 0;
+}
+.spot-name {
+  font: 15px/1.3 var(--font-title);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.spot-row .rec-tags {
+  margin-top: var(--space-1);
+}
+.spot-go {
+  flex-shrink: 0;
+  height: 34px;
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-text-primary);
+  color: var(--color-text-dark);
+  font: 600 12px/1 var(--font-title);
+  cursor: pointer;
+  transition: transform var(--dur-card) var(--ease-out);
+}
+.spot-go:active {
+  transform: scale(0.95);
+}
+
+/* 轻提示（顶部居中，避免与底部按钮/面板重叠） */
+.z-toast {
   position: absolute;
-  bottom: calc(var(--space-6) + env(safe-area-inset-bottom));
-  left: var(--space-5);
-  right: var(--space-5);
-  z-index: var(--z-chrome);
-  margin: 0;
-  text-align: center;
-  font: 11px/1.6 var(--font-body);
-  color: var(--color-text-tertiary);
+  left: 50%;
+  top: calc(var(--space-5) + env(safe-area-inset-top));
+  transform: translate(-50%, -12px);
+  z-index: var(--z-sheet);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-strong);
+  backdrop-filter: blur(10px) saturate(1.2);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  font: 13px/1.5 var(--font-body);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-card) var(--ease-standard), transform var(--dur-card) var(--ease-standard);
+}
+.z-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 
-/* 响应式：窄屏卡片从右浮层改为贴底（12.5） */
-@media (max-width: 479px) {
-  .result-cards {
-    top: auto;
-    bottom: calc(var(--space-8) + env(safe-area-inset-bottom));
-    flex-direction: row;
-    gap: var(--space-2);
-  }
-  .rec-card {
-    flex: 1;
-    padding: var(--space-2) var(--space-3);
-  }
-  .rec-num .num {
-    font-size: 18px;
-  }
+/* 定位失败兜底：应用内城市选择浮层（10.7；替代系统 prompt，内嵌环境可用） */
+.city-picker {
+  position: absolute;
+  left: var(--space-4);
+  right: var(--space-4);
+  bottom: calc(var(--space-7) + 64px + env(safe-area-inset-bottom));
+  z-index: var(--z-sheet);
+  background: var(--color-surface-strong);
+  backdrop-filter: blur(12px) saturate(1.2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+.city-picker-title {
+  margin: 0 0 var(--space-3);
+  font: 14px/1.4 var(--font-body);
+  color: var(--color-text-primary);
+}
+
+/* 自由输入出发地（定位失败兜底：地理编码） */
+.city-input-row {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.city-input {
+  flex: 1;
+  min-width: 0;
+  height: 42px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font: 14px/1 var(--font-body);
+  outline: none;
+  transition: border-color var(--dur-card) var(--ease-standard);
+}
+.city-input::placeholder {
+  color: var(--color-text-tertiary);
+}
+.city-input:focus {
+  border-color: var(--color-success);
+}
+.city-go {
+  height: 42px;
+  padding: 0 var(--space-4);
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-text-primary);
+  color: var(--color-text-dark);
+  font: 600 14px/1 var(--font-title);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: transform var(--dur-card) var(--ease-out);
+}
+.city-go:active {
+  transform: scale(0.96);
+}
+.city-go:disabled {
+  opacity: 0.55;
+  transform: none;
+}
+.city-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.city-chip {
+  height: 38px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-primary);
+  font: 14px/1 var(--font-body);
+  cursor: pointer;
+  transition: border-color var(--dur-card) var(--ease-standard), background var(--dur-card) var(--ease-standard);
+}
+.city-chip:active {
+  border-color: var(--color-success);
+  background: var(--color-surface);
+}
+.city-close {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  border: none;
+  background: none;
+  color: var(--color-text-tertiary);
+  font: 12px/1 var(--font-body);
+  cursor: pointer;
+}
+
+/* 用户定位蓝点（高德标准蓝点，17.1 仅本次展示） */
+.user-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, #4a9eff 0%, #1677ff 60%, rgba(22,119,255,0.6) 100%);
+  border: 3px solid #fff;
+  box-shadow: 0 0 12px rgba(22, 119, 255, 0.6);
+}
+
+/* 地图加载失败提示（map key 缺失回退） */
+.map-warn {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-map);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  color: var(--color-text-tertiary);
+  font: 13px/1.6 var(--font-body);
+  text-align: center;
+  pointer-events: none;
+}
+
+/* 地图外框：消除高德默认 controls 视觉侵入，保持 10.12 安静高效 */
+.amap-logo,
+.amap-copyright {
+  opacity: 0.5;
+}
+.amap-toolbar {
+  display: none;
 }

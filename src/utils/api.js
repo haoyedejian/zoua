@@ -83,3 +83,24 @@ export function fetchDistrict(keywords, { subdistrict = 0, all = false } = {}) {
     extensions: all ? 'all' : 'base'
   });
 }
+
+/**
+ * 动态拉取出发城市风景区 POI（两阶段推荐·阶段1数据源；v5/place/text 风景名胜）
+ * @param {{city?:string, keywords?:string, page?:number}} p
+ * @returns {Promise<{status, pois:Array<{name, adname, location, adcode, poi_id, type}>}>}
+ */
+export function fetchPois({ city, keywords, page = 1 } = {}) {
+  const params = { page };
+  if (city) { params.city = city; params.city_limit = 'true'; }
+  if (keywords) params.keywords = keywords;
+  return queuedGet('/api/amap/pois', params);
+}
+
+/**
+ * 逆地理编码：坐标（GCJ-02）→ 行政区组件（province/city/adcode）
+ * @param {string} location "经度,纬度"
+ * @returns {Promise<{status, regeocode:{addressComponent:{province, city, adcode, district}}}>}
+ */
+export function fetchRegeo(location) {
+  return queuedGet('/api/amap/regeo', { location });
+}

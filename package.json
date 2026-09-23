@@ -1,0 +1,14 @@
+{
+  "name": "zoua",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "走啊！—— 高德告诉你别走这条路，走啊告诉你走哪个方向。",
+  "scripts": {
+    "dev": "node dev-server.js",
+    "test": "node test/scan.test.mjs && node test/queue.test.mjs && node test/scenario.test.mjs"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}

@@ -6,6 +6,8 @@
  * 安全：Key 绝不出现在前端；调用方只接受 origin/destination 坐标。
  */
 
+import { guardOrigin } from './_guard.js';
+
 const AMAP_KEY = process.env.AMAP_WEB_KEY;
 const AMAP_DRIVING_URL = 'https://restapi.amap.com/v3/direction/driving';
 
@@ -43,6 +45,7 @@ async function driving(origin, destination, strategy) {
 }
 
 export default async function handler(req, res) {
+  if (!guardOrigin(req, res)) return;
   // 仅允许 GET + 坐标入参
   if (req.method !== 'GET') {
     res.status(405).json({ status: 0, info: 'METHOD_NOT_ALLOWED' });

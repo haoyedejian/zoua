@@ -12,7 +12,7 @@ import { fetchRoute } from './api.js';
 const DEFAULT_MAX_KM = 100; // 周边短途半径（8.4：防跨省远景锚点误导扇区相对指数）
 
 /** 简化球面近似距离（km，GCJ-02 下精度足够做半径过滤） */
-function kmDistance(a, b) {
+export function kmDistance(a, b) {
   const R = 6371;
   const toRad = Math.PI / 180;
   const dLat = (b.lat - a.lat) * toRad;
@@ -64,8 +64,10 @@ export async function scanSectors(origin, destinations, sectors = 12, router = f
   const sectorResults = await Promise.all(
     buckets.map(async (anchors) => {
       const speeds = [];
+      const detailed = []; // 该扇区每个成功规划的锚点（区县详情·景点列表数据源）
       let okCount = 0;
-      for (const a of anchors.slice(0, 6)) { // 每扇区最多采 6 锚点控配额
+      let rep = null; // 代表锚点（首个规划成功的）：带真实 distance/duration，供 pin 标签与卡片
+      for (const a of anchors.slice(0, 8)) { // 每扇区最多采 8 锚点（提升区县覆盖）
         try {
           const r = await router(origin, { lng: a.lon, lat: a.lat });
           const path = r && r.avoid;
@@ -73,13 +75,19 @@ export async function scanSectors(origin, destinations, sectors = 12, router = f
             const speed = (path.distance / 1000) / (path.duration / 3600); // km/h
             speeds.push(speed);
             okCount++;
+            detailed.push({
+              anchor: a,
+              distanceKm: Math.round(path.distance / 100) / 10,       // 保留1位小数
+              durationMin: Math.round(path.duration / 60)
+            });
+            if (!rep) rep = { anchor: a, distance: path.distance, duration: path.duration };
           }
         } catch {
           /* 单锚点失败降权，不中断 */
         }
       }
-      if (speeds.length === 0) return { index: null, anchorCount: 0, speed: null };
-      return { index: null, anchorCount: okCount, speed: speeds.reduce((a, b) => a + b, 0) / speeds.length };
+      if (speeds.length === 0) return { index: null, anchorCount: 0, speed: null, rep: null, detailed: [] };
+      return { index: null, anchorCount: okCount, speed: speeds.reduce((a, b) => a + b, 0) / speeds.length, rep, detailed };
     })
   );
 
@@ -93,15 +101,83 @@ export async function scanSectors(origin, destinations, sectors = 12, router = f
     ? sorted[(sorted.length - 1) / 2]
     : (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2;
 
-  // 4) 相对中位归一为指数 [0,100]（越高越堵）
-  const out = sectorResults.map(s => {
-    if (s.speed == null) return { index: null, anchorCount: 0, speed: null };
+  // 4) 相对中位归一为指数 [0,100]（越高越堵）；并附该扇区代表锚点（供地图 pin 定位）
+  const out = sectorResults.map((s, i) => {
+    if (s.speed == null) return { index: null, anchorCount: 0, speed: null, anchor: null, distanceKm: null, durationMin: null, detail: [] };
     const ratio = median > 0 ? s.speed / median : 1;
     // ratio∈[0.5,1.5] 映射到 [100,0]；堵(慢)→高指数
     let idx = Math.round((1.5 - Math.min(1.5, Math.max(0.5, ratio))) / 1.0 * 100);
     idx = Math.max(0, Math.min(100, idx));
-    return { index: idx, anchorCount: s.anchorCount, speed: s.speed };
+    // 代表锚点（首个规划成功者）+ 其真实驾车距离/时长（10.11 距离/预计通行时间）
+    const rep = s.rep || null;
+    return {
+      index: idx,
+      anchorCount: s.anchorCount,
+      speed: s.speed,
+      anchor: rep ? rep.anchor : (buckets[i][0] || null),
+      distanceKm: rep ? Math.round(rep.distance / 100) / 10 : null, // 保留1位小数
+      durationMin: rep ? Math.round(rep.duration / 60) : null,
+      detail: s.detailed.map(d => ({
+        name: d.anchor.name || '',
+        county: d.anchor.county || '',
+        lon: d.anchor.lon,
+        lat: d.anchor.lat,
+        km: d.distanceKm,
+        eta: d.durationMin
+      }))
+    };
   });
 
   return { ok: true, mode: 'real', sectors: out };
+}
+
+/**
+ * 区县聚合（两阶段推荐·阶段1）：把「扇区×锚点」结果按行政区(区/县)聚合成区县人少指数。
+ * - 区县指数 = 该县全部有数据锚点指数的均值（越低=路越顺=人越少）
+ * - 每个区县带代表锚点（去该县最顺的锚点，用于 pin 与车程/距离展示）+ 区内景点名列表
+ * @param {Array} sectors scanSectors 输出（含 index/anchor/distanceKm/durationMin）
+ * @returns {Array<{county, adcode, index, anchors:Array, spotNames:Array, rep, km, eta}>} 按指数升序（人少优先）
+ */
+export function aggregateRegions(sectors) {
+  const map = new Map();
+  sectors.forEach(s => {
+    if (!s || s.index == null || !s.anchor || !s.anchor.county) return;
+    const county = s.anchor.county;
+    let rg = map.get(county);
+    if (!rg) {
+      rg = { county, adcode: s.anchor.adcode || '', sum: 0, count: 0, rep: null, bestIdx: Infinity, spots: [], seen: new Set() };
+      map.set(county, rg);
+    }
+    rg.sum += s.index;
+    rg.count++;
+    // 区内景点明细（逐锚点真实车程；去重）
+    (s.detail || []).forEach(d => {
+      if (d.lon == null || !d.name) return;
+      const key = d.name + '|' + d.lon + '|' + d.lat;
+      if (rg.seen.has(key)) return;
+      rg.seen.add(key);
+      rg.spots.push({ name: d.name, county, lon: d.lon, lat: d.lat, km: d.km, eta: d.eta });
+    });
+    if (s.index < rg.bestIdx) {
+      rg.bestIdx = s.index;
+      rg.rep = { anchor: s.anchor, km: s.distanceKm, eta: s.durationMin };
+    }
+  });
+  const list = [...map.values()].map(rg => {
+    const index = Math.round(rg.sum / rg.count);
+    // 该县距离/车程取「最顺代表锚点」的口径；区内景点按车程由近及远展示
+    rg.spots.sort((a, b) => (a.eta ?? 1e9) - (b.eta ?? 1e9));
+    return {
+      county: rg.county,
+      adcode: rg.adcode,
+      index,
+      count: rg.count,
+      spots: rg.spots.slice(0, 6),
+      spotNames: rg.spots.slice(0, 4).map(sp => sp.name),
+      rep: rg.rep ? rg.rep.anchor : null,
+      km: rg.rep ? rg.rep.km : null,
+      eta: rg.rep ? rg.rep.eta : null
+    };
+  });
+  return list.sort((a, b) => a.index - b.index);
 }
