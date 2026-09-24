@@ -262,6 +262,12 @@ body {
   border-top: 1px solid var(--color-border);
   border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
+/* 结果态：已完成定位与推荐，隐藏「走啊」主按钮；面板贴底不留按钮位 */
+#app[data-state='result'] .scan-btn { display: none; }
+#app[data-state='result'] .result-sheet {
+  bottom: 0;
+  padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom));
+}
 .sheet-head {
   display: flex;
   align-items: baseline;
@@ -287,14 +293,6 @@ body {
   font: 11px/1 var(--font-body);
   color: var(--color-text-tertiary);
 }
-/* 横滑提示（三卡超出视口时，明确告知可滑动，避免被误认为布局错误） */
-.sheet-more {
-  margin-left: auto;
-  flex-shrink: 0;
-  font: 11px/1 var(--font-body);
-  color: var(--color-text-tertiary);
-  opacity: 0.75;
-}
 .sheet-foot {
   padding: var(--space-3) var(--space-4) var(--space-2);
   font: 11px/1.4 var(--font-body);
@@ -303,21 +301,21 @@ body {
 }
 .result-cards {
   display: flex;
+  flex-direction: column;   /* 竖排三张推荐卡（桌面端也可读，不依赖横滑） */
   gap: var(--space-2);
-  overflow-x: auto;         /* 横滑切换推荐 */
   padding: 0 var(--space-4);
+  max-height: 60vh;         /* 装下竖排三卡；更矮的屏幕则面板内滚动 */
+  overflow-y: auto;
+  overscroll-behavior: contain;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
-  scroll-snap-type: x mandatory;
-  scroll-padding: 0 var(--space-4);
 }
 .result-cards::-webkit-scrollbar { display: none; }
 .rec-card {
-  flex: 0 0 76%;            /* 单卡主视，露出下一卡边缘提示可滑 */
+  flex: 0 0 auto;
+  width: 100%;              /* 竖排：整行占满卡片区 */
   min-width: 0;
-  max-width: 380px;
-  flex-shrink: 0;
-  scroll-snap-align: start;
+  box-sizing: border-box;   /* padding/border 计入宽度，避免向右溢出 */
   background: var(--color-surface-strong);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -327,10 +325,6 @@ body {
 }
 .rec-card:active {
   transform: scale(0.98);
-}
-/* 末卡后留白：横滑到头不贴边 */
-.cards-spacer {
-  flex: 0 0 var(--space-4);
 }
 .rec-head {
   display: flex;
@@ -428,7 +422,12 @@ body {
 /* 景区详情视图（点击景区名称后替换列表，带返回） */
 .sheet-detail {
   padding: 0 var(--space-4);
+  max-height: 66vh;         /* 详情内容较长时面板内滚动，不溢出屏幕 */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
 }
+.sheet-detail::-webkit-scrollbar { display: none; }
 .detail-head {
   display: flex;
 }
@@ -485,21 +484,6 @@ body {
 }
 .spot-row .rec-tags {
   margin-top: var(--space-1);
-}
-.spot-go {
-  flex-shrink: 0;
-  height: 34px;
-  padding: 0 var(--space-3);
-  border: none;
-  border-radius: var(--radius-full);
-  background: var(--color-text-primary);
-  color: var(--color-text-dark);
-  font: 600 12px/1 var(--font-title);
-  cursor: pointer;
-  transition: transform var(--dur-card) var(--ease-out);
-}
-.spot-go:active {
-  transform: scale(0.95);
 }
 
 /* 轻提示（顶部居中，避免与底部按钮/面板重叠） */

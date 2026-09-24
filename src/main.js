@@ -310,11 +310,9 @@ function renderResult() {
     <div class="sheet-view sheet-list">
       <div class="sheet-head">
         <span class="sheet-title">哪里人少？可以走这些方向<em>按当前出行顺畅度</em></span>
-        <span class="sheet-more" aria-hidden="true">↔ 滑动</span>
       </div>
       <div class="result-cards">
         ${top.map((rg, i) => regionCardHTML(rg, i)).join('')}
-        <span class="cards-spacer" aria-hidden="true"></span>
       </div>
       <div class="sheet-foot">数据由高德路线实时测算 · ${scanTimeText()}</div>
     </div>
@@ -415,7 +413,6 @@ function openRegionDetail(sheet, rg) {
               ${sp.eta != null ? `<span class="tag">车程约${sp.eta}分钟</span>` : ''}
             </div>
           </div>
-          <button type="button" class="spot-go">去这里</button>
         </div>`).join('')}
     </div>
     <div class="detail-actions">
@@ -438,11 +435,6 @@ function openRegionDetail(sheet, rg) {
     sector: 0,
     shareTitle: rg.county
   }));
-  // 景点行：导航
-  detail.querySelectorAll('.spot-go').forEach((btn, i) => {
-    const sp = spots[i];
-    btn.addEventListener('click', () => openNavigation({ anchor: sp }));
-  });
 }
 
 /** 图例组件（10.9：色带 + 人少/人多 语义，常驻地图角落；设计稿左上角） */
@@ -457,14 +449,21 @@ function mountLegend() {
   app.appendChild(el);
 }
 
+/** 是否移动端（用于选择调起 APP 的跳转方式） */
+function isMobile() {
+  return /Android|iPhone|iPad|iPod|Mobile|HarmonyOS/i.test(navigator.userAgent || '');
+}
+
 /** 输出层 · 跳转高德导航（10.11 主按钮）：携带目的地 GCJ-02 坐标与名称 */
 function openNavigation(b) {
   if (!b || !b.anchor || b.anchor.lon == null) { toast('暂无该目的地的坐标，无法发起导航'); return; }
-  // uri 高德导航：to=经度,纬度,名称；mode=car 驾车
+  // 高德 URI 导航：to=经度,纬度,名称；mode=car 驾车；coordinate=gaode（GCJ-02）；
+  // callnative=1 才会在手机浏览器尝试调起高德地图 APP（=0 只留 H5 页），src 为来源标注
   const lon = b.anchor.lon, lat = b.anchor.lat;
   const name = encodeURIComponent(b.anchor.name || '目的地');
-  const url = `https://uri.amap.com/navigation?to=${lon},${lat},${name}&mode=car&callnative=0`;
-  window.open(url, '_blank');
+  const url = `https://uri.amap.com/navigation?to=${lon},${lat},${name}&mode=car&coordinate=gaode&src=zoua&callnative=1`;
+  if (isMobile()) location.href = url;      // 移动端同标签跳转，避免新开空白页残留
+  else window.open(url, '_blank');
 }
 
 /**
