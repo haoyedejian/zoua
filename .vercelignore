@@ -1,0 +1,7 @@
+# Vercel 部署排除名单：本文件永不随产物上传（密钥 + 本地产物）
+# 生产运行只依赖 serverless/api/amap/*、src/*、index.html、data/*、vercel.json
+.env
+.env.*
+.vercel/
+node_modules/
+*.log
