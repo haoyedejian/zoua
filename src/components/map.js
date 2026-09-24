@@ -1,18 +1,34 @@
 /**
  * 走啊 · 高德底图主舞台封装（规划书 10.2 地图主舞台）
  * 职责：异步加载 AMap JS API → 初始化底图 → 提供 用户蓝点 / 推荐 pin / 居中聚焦。
- * Key 安全（9.3）：JS key 由 dev-server（或部署端）注入为 window.__AMAP_JS_KEY__，
- *                 不入 git、不落静态源码；生产用构建时占位替换。
+ * Key 安全（9.3）：JS key 由 dev-server 注入为 window.__AMAP_JS_KEY__，静态托管下回退
+ *                 /api/amap/jskey 下发；均不入 git、不落静态源码。
  */
 
 const LOADER_URL = 'https://webapi.amap.com/loader.js';
 
 let loadPromise = null;
+
+/**
+ * Key 获取顺序：① dev-server 注入的 window.__AMAP_JS_KEY__（本地）
+ *              ② 回退 /api/amap/jskey（Vercel 等静态托管，见 serverless/api/amap/jskey.js）
+ */
+async function resolveJsKey() {
+  if (window.__AMAP_JS_KEY__) return window.__AMAP_JS_KEY__;
+  try {
+    const resp = await fetch('/api/amap/jskey');
+    if (!resp.ok) return '';
+    const data = await resp.json();
+    return data && data.key ? data.key : '';
+  } catch {
+    return '';
+  }
+}
+
 function loadAMap() {
   if (window.AMap) return Promise.resolve(window.AMap);
   if (loadPromise) return loadPromise;
-  loadPromise = new Promise((resolve, reject) => {
-    const key = window.__AMAP_JS_KEY__;
+  loadPromise = resolveJsKey().then((key) => new Promise((resolve, reject) => {
     if (!key) {
       resolve({ missingKey: true });
       return;
@@ -28,7 +44,7 @@ function loadAMap() {
     };
     s.onerror = () => reject(new Error('LOADER_FAILED'));
     document.head.appendChild(s);
-  });
+  }));
   return loadPromise;
 }
 

@@ -5,7 +5,7 @@
 
 ## 体验链接
 
-（待部署后填写：GitHub Pages 地址）
+（待部署后填写：Vercel 生产地址，如 https://zoua.vercel.app）
 
 ## 产品说明
 
@@ -38,17 +38,18 @@ npm run dev
 # 1. 安装 CLI 并登录
 npm i -g vercel && vercel login
 
-# 2. 配置环境变量（生产必配，共两项 + 开发可忽略项）
-vercel env add AMAP_WEB_KEY production   # 高德 Web 服务 Key（只存在于 Vercel，严禁入库）
-vercel env add ALLOWED_ORIGINS production # 预发布域名前缀，逗号分隔，如 https://zoua.vercel.app
-# 注：AMAP_JS_KEY 由 dev-server 在本地注入（.env），生产在构建时前端占位替换，或前端通过注入脚本提供
+# 2. 配置环境变量（生产必配，三项）
+vercel env add AMAP_WEB_KEY production    # 高德 Web 服务 Key（仅服务端持有，严禁入库）
+vercel env add AMAP_JS_KEY production     # 高德 JS API Key（经 /api/amap/jskey 下发前端）
+vercel env add ALLOWED_ORIGINS production # 允许调用代理的来源，逗号分隔，如 https://zoua.vercel.app（支持 *.example.com）
 
 # 3. 部署
 vercel --prod
 ```
 
-- **必做校验（Vercel Function 防治盗用）**：`ALLOWED_ORIGINS` 需包含所有合法入口（Vercel 域名 / GitHub Pages 域名）。未配置时函数放行以便初配，上线前务必配置。
-- **高德 JS Key 域名白名单**：在 AMap 控制台同时写入本地 `localhost:5173` 与预发布 HTTPS 域名；H5 geolocation 依赖 HTTPS（见 17.1）。
+- **JS Key 下发链路**：本地由 `dev-server.js` 注入 `window.__AMAP_JS_KEY__`；生产静态产物无注入能力，[map.js](src/components/map.js) 自动回退请求 `/api/amap/jskey`（见 `serverless/api/amap/jskey.js`）。
+- **必做校验（Vercel Function 防治盗用）**：`ALLOWED_ORIGINS` 需列全部合法入口域名；校验按 hostname 精确比对（不做字符串前缀匹配）。未配置时函数放行以便初配，上线前务必配置。
+- **高德 JS Key 域名白名单**：在 AMap 控制台写入 Vercel 生产域名（及本地 `localhost:5173`）；JS Key 的防护依赖域名白名单，H5 geolocation 依赖 HTTPS（见 17.1）。
 - 配额纪律见规划书 9.2（单次扫描 ≤12 次新调用；QPS≤3 由前端队列 + 服务端节流双控）。
 
 ## 数据来源声明
