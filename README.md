@@ -64,7 +64,7 @@ npm i -g vercel && vercel login
 # 2. 配置环境变量（生产必配，三项）
 vercel env add AMAP_WEB_KEY production    # 高德 Web 服务 Key（仅服务端持有，严禁入库）
 vercel env add AMAP_JS_KEY production     # 高德 JS API Key（经 /api/amap/jskey 下发前端）
-vercel env add ALLOWED_ORIGINS production # 允许调用代理的来源，逗号分隔，如 https://zoua.vercel.app（支持 *.example.com）
+vercel env add ALLOWED_ORIGINS production # 允许调用代理的来源，逗号分隔，如 https://your-domain.example.com（支持 *.example.com）
 
 # 3. 部署
 vercel --prod
