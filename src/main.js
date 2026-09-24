@@ -18,10 +18,12 @@ const SECTOR_NAMES = ['正北', '东北', '正东', '东南', '正南', '西南'
 const app = document.getElementById('app');
 const btnScan = document.getElementById('btn-scan');
 const mapContainer = document.getElementById('map-container');
+const rangeBar = document.querySelector('.range-bar');
 
 const scanState = {
   userGcj: null,    // GCJ-02 定位点
   cityName: null,   // 出发城市名（定位失败手动选择/输入时记录，供动态拉取风景区）
+  maxMin: 120,      // 可接受最远车程（分钟）——同时决定扫描半径与推荐过滤口径
   indices: [],      // 扇区指数（真实）
   sectors: [],      // 扇区明细（含代表锚点）
   regions: [],      // 区县聚合（阶段1）
@@ -126,13 +128,14 @@ async function runScan() {
     const destinations = await loadDestinations(scanState.userGcj, scanState.cityName);
     // 先挂载雷达 + 热力画布（扫描态视觉），再启动真实扫描
     renderScanning();
-    const res = await scanSectors(scanState.userGcj, destinations, 12, fetchRoute);
+    // 扫描半径按「可接受车程」粗算（城郊混合路况约 1 分钟 ≈ 1 公里），细筛再按真实 ETA
+    const res = await scanSectors(scanState.userGcj, destinations, 12, fetchRoute, scanState.maxMin);
     if (res.ok) {
       scanState.sectors = res.sectors;
       scanState.indices = res.sectors.map(s => s.index);
       scanState.scannedAt = Date.now(); // 12.1：结果卡标注数据测算时间，随缓存命中正确刷新
-      // 两阶段推荐·阶段1：按区县聚合出「哪里人少」
-      scanState.regions = aggregateRegions(res.sectors);
+      // 两阶段推荐·阶段1：按区县聚合出「哪里人少」，并只保留车程在可接受范围内的区县
+      scanState.regions = aggregateRegions(res.sectors, scanState.maxMin);
       // 展示真实热力：方向场 + 区县色斑，随地图缩放/平移重绘（步骤6 图层融合）
       if (scanState.heatRenderer) {
         scanState.heatRenderer.attachMap(zouaMap.amap);
@@ -286,7 +289,14 @@ function renderResult() {
   if (heat && !scanState.keepHeat) heat.remove();
 
   const regions = scanState.regions && scanState.regions.length > 0 ? scanState.regions : null;
-  if (!regions) { renderDegraded('未取得任何方向数据，无法推荐'); return; }
+  if (!regions) {
+    // 车程口径过滤后无剩余（10.7 分支三：如实说明，不硬凑远的区县）
+    renderDegraded(
+      `扫到的方向都不在「最远 ${rangeLabel(scanState.maxMin)}车程」以内。把最远车程放宽一点，或者换个出发地再扫。`,
+      { icon: '🧭', title: '这个车程内没扫出方向' }
+    );
+    return;
+  }
   const top = regions.slice(0, 3);
 
   // 区县 pin 落到「县内最顺代表锚点」（阶段1 唯一打点对象）
@@ -309,7 +319,7 @@ function renderResult() {
   sheet.innerHTML = `
     <div class="sheet-view sheet-list">
       <div class="sheet-head">
-        <span class="sheet-title">哪里人少？可以走这些方向<em>按当前出行顺畅度</em></span>
+        <span class="sheet-title">哪里人少？可以走这些方向<em>按当前出行顺畅度 · 最远 ${rangeLabel(scanState.maxMin)}车程</em></span>
       </div>
       <div class="result-cards">
         ${top.map((rg, i) => regionCardHTML(rg, i)).join('')}
@@ -341,6 +351,10 @@ function crowdLabel(index) {
   if (index == null) return '未知';
   return index < 34 ? '人少' : index < 67 ? '正常' : '人多';
 }
+
+/** 车程口径文案（与 index.html 的 .range-chip 选项一一对应） */
+const RANGE_LABEL = { 30: '30分钟', 60: '1小时', 120: '2小时', 180: '3小时' };
+function rangeLabel(min) { return RANGE_LABEL[min] || `${min}分钟`; }
 
 /** 结果卡数据测算时间（12.1：mm:ss，随 scannedAt 正确刷新） */
 function scanTimeText() {
@@ -574,6 +588,16 @@ btnScan.addEventListener('click', () => {
     () => { hideToast(); showCityPicker(); },
     { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
   );
+});
+
+// 出发前先定口径：能接受多远。扫描中/结果态该控件隐藏，故只作用于下一次扫描。
+rangeBar.addEventListener('click', (e) => {
+  const chip = e.target.closest('.range-chip');
+  if (!chip) return;
+  scanState.maxMin = Number(chip.dataset.min);
+  rangeBar.querySelectorAll('.range-chip').forEach(c => {
+    c.setAttribute('aria-pressed', String(c === chip));
+  });
 });
 
 /** 应用内出发地选择浮层（10.7 定位失败兜底）：预设城市快捷选择 + 自由输入出发地（地理编码） */

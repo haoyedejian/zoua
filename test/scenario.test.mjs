@@ -2,7 +2,7 @@
 // 用注入 router 覆盖三类场景，验证真实数据链路与降级，不消耗高德配额。
 // 运行: node test/scenario.test.mjs
 
-import { scanSectors, assignSector, bearing } from '../src/utils/scan.js';
+import { scanSectors, assignSector, bearing, aggregateRegions } from '../src/utils/scan.js';
 
 let pass = 0, fail = 0;
 function assert(cond, name) {
@@ -73,6 +73,17 @@ const halfFar = dests.map((d, i) => i < 4 ? d : { ...d, lon: HZ.lng + 2.5, lat: 
 const pHalf = await scanSectors(HZ, halfFar, 8, freeRouter);
 const okCounts = pHalf.sectors.filter(s => s && s.speed != null).length;
 assert(okCounts >= 3 && okCounts < 8, `近处锚点参与、远处被最大半径过滤（有数据扇区=${okCounts}，近处4点扇区可能有界点合并，应在[3,8]）`);
+
+// ---- 场景4：可接受车程（maxMin）过滤 —— 时长口径决定区县是否进推荐 ----
+const fakeSectors = [
+  { index: 20, anchor: { county: '近县', lon: 120.2, lat: 30.3 }, distanceKm: 20, durationMin: 30, detail: [] },
+  { index: 30, anchor: { county: '远县', lon: 121.5, lat: 30.5 }, distanceKm: 90, durationMin: 130, detail: [] }
+];
+const allRg = aggregateRegions(fakeSectors);
+const cappedRg = aggregateRegions(fakeSectors, 60);
+assert(allRg.length === 2, `不设车程上限时两个县都进推荐（实际 ${allRg.length}）`);
+assert(cappedRg.length === 1 && cappedRg[0].county === '近县',
+  `上限 60 分钟时只留 30 分钟的近县（实际 ${cappedRg.map(r => r.county + '/' + r.eta + 'min').join(',') || '空'}）`);
 
 console.log(`\n结果: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

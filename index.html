@@ -11,6 +11,14 @@
   <!-- 走啊 · 三态决策画布：定位态 / 扫描态 / 结果态（10.2） -->
   <div id="app" data-state="idle">
     <div id="map-container"></div>
+    <!-- 出发前先定口径：能接受多远（时长），决定扫描半径与推荐范围 -->
+    <div class="range-bar" role="radiogroup" aria-label="可接受的最远车程">
+      <span class="range-bar-label">最远车程（决定扫多远）</span>
+      <button type="button" class="range-chip" data-min="30">30分</button>
+      <button type="button" class="range-chip" data-min="60">1小时</button>
+      <button type="button" class="range-chip" data-min="120" aria-pressed="true">2小时</button>
+      <button type="button" class="range-chip" data-min="180">3小时</button>
+    </div>
     <button id="btn-scan" class="scan-btn">走啊</button>
   </div>
   <script type="module" src="src/main.js"></script>

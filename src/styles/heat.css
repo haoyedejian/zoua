@@ -509,6 +509,37 @@ body {
   transform: translate(-50%, 0);
 }
 
+/* 出发前：可接受车程选择（时长口径，距离由时长粗算）——仅定位态/降级态可见 */
+.range-bar {
+  position: absolute;
+  top: calc(var(--space-5) + env(safe-area-inset-top));
+  left: var(--space-4);
+  right: var(--space-4);
+  z-index: var(--z-chrome);
+  display: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-strong);
+  backdrop-filter: blur(12px) saturate(1.2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+#app[data-state='idle'] .range-bar,
+#app[data-state='degraded'] .range-bar {
+  display: flex;
+}
+.range-bar-label {
+  flex-basis: 100%;
+  font: 13px/1.4 var(--font-body);
+  color: var(--color-text-tertiary);
+}
+.range-chip[aria-pressed='true'] {
+  border-color: var(--color-success);
+  background: var(--color-surface);
+}
+
 /* 定位失败兜底：应用内城市选择浮层（10.7；替代系统 prompt，内嵌环境可用） */
 .city-picker {
   position: absolute;
@@ -577,7 +608,8 @@ body {
   flex-wrap: wrap;
   gap: var(--space-2);
 }
-.city-chip {
+.city-chip,
+.range-chip {
   height: 38px;
   padding: 0 var(--space-4);
   border: 1px solid var(--color-border);
@@ -588,7 +620,8 @@ body {
   cursor: pointer;
   transition: border-color var(--dur-card) var(--ease-standard), background var(--dur-card) var(--ease-standard);
 }
-.city-chip:active {
+.city-chip:active,
+.range-chip:active {
   border-color: var(--color-success);
   background: var(--color-surface);
 }

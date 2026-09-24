@@ -136,9 +136,11 @@ export async function scanSectors(origin, destinations, sectors = 12, router = f
  * - 区县指数 = 该县全部有数据锚点指数的均值（越低=路越顺=人越少）
  * - 每个区县带代表锚点（去该县最顺的锚点，用于 pin 与车程/距离展示）+ 区内景点名列表
  * @param {Array} sectors scanSectors 输出（含 index/anchor/distanceKm/durationMin）
+ * @param {number} maxMin 可接受最远车程（分钟）；代表锚点车程超出者不进入推荐。
+ *                       时长是用户真正可感知的口径，比直线半径更贴近实际（10.11）
  * @returns {Array<{county, adcode, index, anchors:Array, spotNames:Array, rep, km, eta}>} 按指数升序（人少优先）
  */
-export function aggregateRegions(sectors) {
+export function aggregateRegions(sectors, maxMin = Infinity) {
   const map = new Map();
   sectors.forEach(s => {
     if (!s || s.index == null || !s.anchor || !s.anchor.county) return;
@@ -179,5 +181,7 @@ export function aggregateRegions(sectors) {
       eta: rg.rep ? rg.rep.eta : null
     };
   });
-  return list.sort((a, b) => a.index - b.index);
+  return list
+    .filter(rg => rg.eta == null || rg.eta <= maxMin) // 车程超出口径的区县不进推荐（无 ETA 者保留，不臆断）
+    .sort((a, b) => a.index - b.index);
 }
