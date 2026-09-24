@@ -3,10 +3,6 @@
 > 高德告诉你"别走这条路"，走啊告诉你"走哪个方向"。
 > 临时起意的自驾决策工具：扫一圈，看哪个方向现在不堵。
 
-## 体验链接
-
-（待部署后填写：Vercel 生产地址，如 https://zoua.vercel.app）
-
 ## 产品说明
 
 - 定位 → 扇区反向扫描 → 两阶段推荐（先看周边哪个人少 → 再看那个区县能去哪）→ 挑景点 → 跳转高德导航
@@ -17,6 +13,32 @@
 
 - H5 前端（移动端优先）+ 高德 JS API + Canvas 热力自绘
 - Serverless Proxy（Vercel Functions）中转高德 Key
+
+## 工程亮点
+
+- **数据层依赖注入**：`scanSectors(origin, dests, sectors, router)` 的 router 可注入，测试用替身覆盖「堵城 / 空城 / 跨城远景」三类场景，不消耗真实配额即可回归
+- **29 项单测全过**（`npm test`）：扇区指数反演、请求队列并发峰值、多城市场景回归
+- **配额纪律**：前端请求队列并发上限 3 + 本地服务端平滑节流 ≥320ms，单次扫描新调用控制在 12 次量级
+- **四分支显式降级**：定位失败 → 城市浮层；规划失败 → 「没扫出方向」；配额耗尽 → 「稍缓一下」；断网 → 静态兜底。不伪造数据
+- **设计 Token 体系**：色彩 / 字体 / 间距 / 圆角 / 动效 / 图层全部收敛为 CSS 变量，组件层不硬编码
+- **密钥纪律**：Web 服务 Key 仅服务端持有，JS Key 经注入或 `/api/amap/jskey` 下发，仓库内无任何真实密钥
+
+## 项目结构
+
+```
+zoua/
+├─ index.html               # 三态决策画布入口
+├─ dev-server.js            # 零依赖本地服务（静态托管 + /api/amap/* 代理）
+├─ vercel.json              # 静态产物 + Functions 同仓库部署配置
+├─ serverless/api/amap/     # route / district / regeo / geocode / pois / poi / jskey + 来源白名单
+├─ src/
+│  ├─ main.js               # 三态状态机：定位 → 扫描 → 结果
+│  ├─ components/           # map（高德底图）/ radar（雷达动画）/ heatmap（热力自绘）
+│  ├─ utils/                # scan（扇区反演）/ sector / geo / api（请求队列）
+│  └─ styles/               # variables.css（设计 Token 唯一来源）+ heat.css
+├─ test/                    # scan / queue / scenario 三套单测
+└─ docs/                    # 产品规划书 + 审计留痕
+```
 
 ## 本地开发
 
@@ -30,7 +52,7 @@ npm run dev
 
 > Key 安全纪律：Web 服务 Key 仅存 Serverless 环境变量；JS API Key 绑定域名白名单；真实 Key 严禁提交。
 
-## 部署到 Vercel
+## 部署到 Vercel（可选，当前仓库未部署线上环境）
 
 静态 H5 + `serverless/` Functions 同仓库部署，前缀 `/api/amap/*` 由 `vercel.json` 的 rewrite 路由到函数。
 
