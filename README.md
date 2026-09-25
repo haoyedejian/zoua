@@ -37,8 +37,7 @@ zoua/
 │  ├─ components/           # map（高德底图）/ radar（雷达动画）/ heatmap（热力自绘）
 │  ├─ utils/                # scan（扇区反演）/ sector / geo / api（请求队列）
 │  └─ styles/               # variables.css（设计 Token 唯一来源）+ heat.css
-├─ test/                    # scan / queue / scenario 三套单测
-└─ docs/                    # 产品规划书 + 审计留痕
+└─ test/                    # scan / queue / scenario 三套单测
 ```
 
 ## 本地开发
@@ -84,5 +83,3 @@ vercel --prod
 | 地理编码（geocode） | 定位失败时用户输入出发地 |
 | 地点搜索/详情（POI） | 动态拉取风景区 + 目的地信息（仅点击时按需查询） |
 | 行政区划查询（extensions=all） | 县区边界 Polygon + 归属反查 |
-
-产品规划书：`docs/走啊_产品规划书_v2.10.md`
