@@ -1,13 +1,12 @@
 /* =====================================================
  * 走啊 (zoua) · 热力渲染样式
- * 契约依据：产品规划书 v2.8 第 10.9 节「热力渲染规范」
  * 模型：核密度连续面（多层 radial-gradient 叠加 + screen 混合），
  *       感知均匀色阶 绿#16A34A→黄#FACC15→橙#FB923C→红#E8463A，
  *       双编码（亮度+颜色），bloom 高光核心，行政区边界描边。
  * 注意：热力面永远位于官方路况图层之上（--z-heat > --z-map）
  * ===================================================== */
 
-/* ---------- 画布布局（移动端优先：固定竖屏手机容器，10.2/10.12.5） ---------- */
+/* ---------- 画布布局（移动端优先：固定竖屏手机容器） ---------- */
 html, body {
   margin: 0;
   height: 100%;
@@ -31,7 +30,7 @@ body {
   inset: 0;
 }
 
-/* 主按钮：扫一圈（zhong胶囊，10.12 交互规范） */
+/* 主按钮：扫一圈（zhong胶囊） */
 .scan-btn {
   position: absolute;
   bottom: calc(var(--space-6) + env(safe-area-inset-bottom));
@@ -78,7 +77,7 @@ body {
   pointer-events: none;
 }
 
-/* 显式降级态（7.3 下界：不伪造数据，只提示） */
+/* 显式降级态（下界：不伪造数据，只提示） */
 .degraded {
   position: absolute;
   inset: 0;
@@ -159,7 +158,7 @@ body {
   pointer-events: none;
 }
 
-/* 推荐 pin：编号 badge（绿圈白字+光晕）+ 县名·距离标签（设计稿 10.12.3） */
+/* 推荐 pin：编号 badge（绿圈白字+光晕）+ 县名·距离标签 */
 .rec-pin {
   position: absolute;
   z-index: var(--z-pin);
@@ -180,7 +179,7 @@ body {
   border-radius: var(--radius-full);
   background: var(--color-success);
   border: 2px solid #fff;
-  box-shadow: 0 0 12px var(--color-success);   /* 唯一允许的阴影（10.12.3） */
+  box-shadow: 0 0 12px var(--color-success);   /* 唯一允许的阴影 */
   color: #fff;
   font: 600 13px/1 var(--font-num);
   transition: transform var(--dur-card) var(--ease-standard);
@@ -206,7 +205,7 @@ body {
   border-color: var(--color-success);
 }
 
-/* 常驻图例（10.9）：标题 + 色带 + 0/50/100 刻度，左上角（设计稿） */
+/* 常驻图例：标题 + 色带 + 0/50/100 刻度，左上角 */
 .heat-legend {
   position: absolute;
   left: var(--space-4);
@@ -240,7 +239,7 @@ body {
   margin-top: 2px;
 }
 
-/* 结果态收敛：扇区 conic 只用于扫描动画，结果态隐藏（10.9） */
+/* 结果态收敛：扇区 conic 只用于扫描动画，结果态隐藏 */
 .scanner-sector {
   display: none;   /* 结果态由 JS 移除 .scanning 类后整体隐藏 */
 }
@@ -361,7 +360,7 @@ body {
   color: var(--rec-accent, var(--color-success));
 }
 
-/* 详情标签组（10.11-2：距离/时间/指数；缺失即隐藏） */
+/* 详情标签组（距离/时间/指数；缺失即隐藏） */
 .rec-tags {
   display: flex;
   flex-wrap: wrap;
@@ -377,7 +376,7 @@ body {
   white-space: nowrap;
 }
 
-/* 方向级推荐简介（10.11 v2.9 补）：正文 15px Regular（10.12.2 简介/理由句）；小卡限两行省略 */
+/* 方向级推荐简介：正文 15px Regular（简介/理由句）；小卡限两行省略 */
 .rec-desc {
   margin-top: var(--space-2);
   font: 14px/1.5 var(--font-body);
@@ -396,7 +395,7 @@ body {
 }
 .act-btn {
   flex: 1;
-  height: 44px;                     /* 触控目标 ≥44pt（10.8） */
+  height: 44px;                     /* 触控目标 ≥44pt */
   padding: 0 var(--space-4);
   border: none;
   border-radius: var(--radius-full);
@@ -540,7 +539,7 @@ body {
   background: var(--color-surface);
 }
 
-/* 定位失败兜底：应用内城市选择浮层（10.7；替代系统 prompt，内嵌环境可用） */
+/* 定位失败兜底：应用内城市选择浮层（替代系统 prompt，内嵌环境可用） */
 .city-picker {
   position: absolute;
   left: var(--space-4);
@@ -636,7 +635,7 @@ body {
   cursor: pointer;
 }
 
-/* 用户定位蓝点（高德标准蓝点，17.1 仅本次展示） */
+/* 用户定位蓝点（高德标准蓝点，仅本次展示） */
 .user-dot {
   width: 18px;
   height: 18px;
@@ -661,7 +660,7 @@ body {
   pointer-events: none;
 }
 
-/* 地图外框：消除高德默认 controls 视觉侵入，保持 10.12 安静高效 */
+/* 地图外框：消除高德默认 controls 视觉侵入，保持安静高效 */
 .amap-logo,
 .amap-copyright {
   opacity: 0.5;
